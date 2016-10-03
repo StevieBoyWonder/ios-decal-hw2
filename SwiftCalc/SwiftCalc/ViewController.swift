@@ -22,6 +22,9 @@ class ViewController: UIViewController {
     // TODO: This looks like a good place to add some data structures.
     //       One data structure is initialized below for reference.
     var someDataStructure: [String] = [""]
+    var Stack = [String]()
+    var Check = false
+    var Check2 = false
     
 
     override func viewDidLoad() {
@@ -46,15 +49,68 @@ class ViewController: UIViewController {
     // TODO: A method to update your data structure(s) would be nice.
     //       Modify this one or create your own.
     func updateSomeDataStructure(_ content: String) {
-        print("Update me like one of those PCs")
     }
     
     // TODO: Ensure that resultLabel gets updated.
     //       Modify this one or create your own.
+    
+    //
+    
     func updateResultLabel(_ content: String) {
-        print("Update me like one of those PCs")
+        print("Adding to Label")
+        if resultLabel.text == nil || resultLabel.text == "0"{
+            resultLabel.text = content
+        }
+        else if resultLabel.text!.characters.count < 7{
+            resultLabel.text = resultLabel.text! + content
+        }
+    }
+    func ResetResultLabel() {
+       resultLabel.text = "0"
+       Stack = [String]()
+       Check = false
+       Check2 = false
+        
+        
     }
     
+    func FlipResultLabel() {
+        if resultLabel.text!.characters.count == 7{
+            return
+        }
+        if resultLabel.text![resultLabel.text!.startIndex] == "-"{
+            resultLabel.text!.remove(at: resultLabel.text!.startIndex)
+        }
+        else {
+            resultLabel.text = "-" + resultLabel.text!
+        }
+    }
+    func addDot(){
+        if resultLabel.text!.characters.count == 7{
+            return
+        }
+        else{
+            resultLabel.text = resultLabel.text! + "."
+        }
+    }
+    
+    func CheckVals(a:String, b:String) -> Bool{
+        let toA = Double(a)
+        let toB = Double(b)
+        if toA == round(toA!) && toB==round(toB!){
+            return true
+        }
+        return false
+        
+    }
+    
+    func CreateScience(a: Double) -> String{
+        let numberFormatter = NumberFormatter()
+        numberFormatter.numberStyle = NumberFormatter.Style.scientific
+        numberFormatter.exponentSymbol = "e"
+        numberFormatter.positiveFormat = "0.##E+0"
+        return numberFormatter.string(from: NSNumber(value: a))!
+    }
     
     // TODO: A calculate method with no parameters, scary!
     //       Modify this one or create your own.
@@ -66,31 +122,169 @@ class ViewController: UIViewController {
     //       Modify this one or create your own.
     func intCalculate(a: Int, b:Int, operation: String) -> Int {
         print("Calculation requested for \(a) \(operation) \(b)")
-        return 0
+        var val = Int()
+        switch operation {
+            case "+":
+                val = a + b
+            case "-":
+                val = a - b
+            case "*":
+                val = a * b
+            default:
+                val = 100
+        }
+        return val
     }
     
     // TODO: A general calculate method for doubles
     //       Modify this one or create your own.
     func calculate(a: String, b:String, operation: String) -> Double {
-        print("Calculation requested for \(a) \(operation) \(b)")
-        return 0.0
+        print("Calculation Double requested for \(a) \(operation) \(b)")
+        var val = Double()
+        switch operation {
+        case "+":
+            val = Double(a)! + Double(b)!
+        case "-":
+            val = Double(a)! - Double(b)!
+        case "*":
+            val = Double(a)! * Double(b)!
+        case "/":
+            val = Double(a)! / Double(b)!
+        default:
+            val = 100
+        }
+        return val
     }
     
     // REQUIRED: The responder to a number button being pressed.
     func numberPressed(_ sender: CustomButton) {
         guard Int(sender.content) != nil else { return }
         print("The number \(sender.content) was pressed")
-        // Fill me in!
+        Check = false
+        for i in ["/", "*", "-", "+"]{
+            if Stack.last == i && Check2{
+                resultLabel.text = "0"
+            }
+        }
+        Check2 = false
+        updateResultLabel(sender.content)
     }
     
     // REQUIRED: The responder to an operator button being pressed.
     func operatorPressed(_ sender: CustomButton) {
         // Fill me in!
+        print("The operator \(sender.content) was pressed")
+        if sender.content == "C"{
+            ResetResultLabel()
+        }
+        else if sender.content == "+/-"{
+            FlipResultLabel()
+        }
+        else if sender.content == "+" || sender.content == "-" || sender.content == "*" || sender.content == "/"{
+            if Check{
+                Stack[Stack.count - 1] = sender.content
+                return
+                    //want to do nothing and move on.
+            }
+            Stack.append(resultLabel.text!)
+            if Stack.count == 3{
+                if CheckVals(a: Stack[0], b: Stack[2]) && Stack[1] != "/"{
+                    let value = intCalculate(a: Int(Stack[0])!, b: Int(Stack[2])!, operation: Stack[1])
+                    if value < 9999999 && value > 0{
+                        resultLabel.text = String(value)
+                    }
+                    else if value > -999999 && value < 0{
+                        resultLabel.text = String(value)
+                    }
+                    else{
+                        print("ok it tried")
+                        resultLabel.text = CreateScience(a: Double(value))
+                    }
+                }
+                else{
+                    let value = calculate(a: Stack[0], b: Stack[2], operation: Stack[1])
+                    if round(value) == value{
+                        resultLabel.text = String(Int(value))
+                    }
+                    else{
+                        var want = String(value)
+                        if want.characters.count > 7{
+                           want = String(format: "%.5f", value)
+                        }
+                        if want == "0.00000"{
+                            want = CreateScience(a: value)
+                            resultLabel.text = want
+                        }
+                        else{
+                            resultLabel.text = want
+                        }
+                    }
+                }
+                Stack = [String]()
+                Stack.append(resultLabel.text!)
+            }
+            Check = true
+            Check2 = true
+            Stack.append(sender.content)
+        }
+        else if sender.content == "="{
+            if Check{
+                return
+                //want to do nothing and move on
+            }
+            Stack.append(resultLabel.text!)
+            if CheckVals(a: Stack[0], b: Stack[2]) && Stack[1] != "/"{
+                let value = intCalculate(a: Int(Stack[0])!, b: Int(Stack[2])!, operation: Stack[1])
+                if value < 9999999 && value > 0{
+                    resultLabel.text = String(value)
+                }
+                else if value > -999999 && value < 0{
+                    resultLabel.text = String(value)
+                }
+                else{
+                    print("ok it tried")
+                    resultLabel.text = CreateScience(a: Double(value))
+                }
+            }
+            else{
+                let value = calculate(a: Stack[0], b: Stack[2], operation: Stack[1])
+                if round(value) == value{
+                    resultLabel.text = String(Int(value))
+                }
+                else{
+                    var want = String(value)
+                    if want.characters.count > 7{
+                        want = String(format: "%.5f", value)
+                    }
+                    if want == "0.00000"{
+                        want = CreateScience(a: value)
+                        resultLabel.text = want
+                    }
+                    else{
+                        resultLabel.text = want
+                    }
+                }
+            }
+            Stack = [String]()
+        }
     }
     
     // REQUIRED: The responder to a number or operator button being pressed.
     func buttonPressed(_ sender: CustomButton) {
        // Fill me in!
+        if sender.content == "."{
+            addDot()
+        }
+        if sender.content == "0"{
+            Check = false
+            for i in ["/", "*", "-", "+"]{
+                if Stack.last == i && Check2{
+                    resultLabel.text = "0"
+                }
+            }
+            Check2 = false
+            updateResultLabel(sender.content)
+        }
     }
     
     // IMPORTANT: Do NOT change any of the code below.
